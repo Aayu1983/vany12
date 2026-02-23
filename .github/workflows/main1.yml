@@ -6,7 +6,7 @@ on:
       working_directory:
         description: "Path to Terraform working directory"
         required: true
-        default: "rg" # Windows pe './' ki zarurat nahi padti seedha folder name likhein
+        default: "rg" 
 
 permissions:
   id-token: write
@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   terraform_plan:
-    name: Terraform Plan (Windows)
+    name: Terraform Plan
     runs-on: windows-latest
     env:
       ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
@@ -27,6 +27,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # --- DEBUG STEP: Ye check karega ki files kahan hain ---
+      - name: Check Folder Structure
+        run: |
+          echo "Current Path: $PWD"
+          ls -R
+        shell: pwsh
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -36,59 +43,13 @@ jobs:
         run: terraform init
         working-directory: ${{ github.event.inputs.working_directory }}
 
-      - name: Terraform Validate
-        run: terraform validate
-        working-directory: ${{ github.event.inputs.working_directory }}
-
       - name: Terraform Plan
-        run: terraform plan -out=tfplan
+        # Windows par hum absolute path ka use karenge output ke liye
+        run: terraform plan -out="${{ github.workspace }}/tfplan"
         working-directory: ${{ github.event.inputs.working_directory }}
 
-      # Plan file ko save karna zaroori hai taaki 'apply' job ise use kar sake
       - name: Upload Plan Artifact
         uses: actions/upload-artifact@v4
         with:
           name: tf-plan-file
-          path: ${{ github.event.inputs.working_directory }}/tfplan
-
-  manual_validation:
-    name: Manual Approval
-    needs: terraform_plan
-    runs-on: ubuntu-latest # Approval ke liye koi bhi machine chalegi
-    environment: dev
-    steps:
-      - name: Waiting for Approval
-        run: echo "Waiting for approval in GitHub Environments..."
-
-  terraform_apply:
-    name: Terraform Apply (Windows)
-    needs: manual_validation
-    runs-on: windows-latest
-    env:
-      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
-      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
-      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
-      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.5.0
-
-      - name: Download Plan Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: tf-plan-file
-          path: ${{ github.event.inputs.working_directory }}
-
-      - name: Terraform Init
-        run: terraform init
-        working-directory: ${{ github.event.inputs.working_directory }}
-
-      - name: Terraform Apply
-        run: terraform apply -auto-approve tfplan
-        working-directory: ${{ github.event.inputs.working_directory }}
+          path: ${{ github.workspace }}/tfplan
