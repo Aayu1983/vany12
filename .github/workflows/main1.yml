@@ -6,7 +6,7 @@ on:
       working_directory:
         description: "Path to Terraform working directory"
         required: true
-        default: "rg" 
+        default: "rg"
 
 permissions:
   id-token: write
@@ -27,29 +27,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # --- DEBUG STEP: Ye check karega ki files kahan hain ---
-      - name: Check Folder Structure
-        run: |
-          echo "Current Path: $PWD"
-          ls -R
-        shell: pwsh
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.5.0
+          terraform_wrapper: false # Ye sabse important fix hai
 
       - name: Terraform Init
         run: terraform init
         working-directory: ${{ github.event.inputs.working_directory }}
 
       - name: Terraform Plan
-        # Windows par hum absolute path ka use karenge output ke liye
-        run: terraform plan -out="${{ github.workspace }}/tfplan"
+        id: plan
+        # Windows pe path ke liye slash direction change ki hai
+        run: terraform plan -out="${{ github.workspace }}\tfplan"
         working-directory: ${{ github.event.inputs.working_directory }}
 
       - name: Upload Plan Artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: tf-plan-file
-          path: ${{ github.workspace }}/tfplan
+          path: ${{ github.workspace }}\tfplan
