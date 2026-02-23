@@ -1,10 +1,10 @@
-name: Terraform Windows Workflow
+name: Terraform Azure Windows Pipeline
 
 on:
   workflow_dispatch:
     inputs:
       working_directory:
-        description: "Path to Terraform working directory"
+        description: "Terraform folder ka path (e.g., rg)"
         required: true
         default: "rg"
 
@@ -13,8 +13,9 @@ permissions:
   contents: read
 
 jobs:
+  # --- Stage 1: Terraform Plan ---
   terraform_plan:
-    name: Terraform Plan
+    name: "Terraform Plan"
     runs-on: windows-latest
     env:
       ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
@@ -24,28 +25,70 @@ jobs:
       TF_IN_AUTOMATION: true
 
     steps:
-      - name: Checkout repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.5.0
-          terraform_wrapper: false # Ye sabse important fix hai
+          terraform_wrapper: false
 
       - name: Terraform Init
         run: terraform init
         working-directory: ${{ github.event.inputs.working_directory }}
 
       - name: Terraform Plan
-        id: plan
-        # Windows pe path ke liye slash direction change ki hai
         run: terraform plan -out="${{ github.workspace }}\tfplan"
         working-directory: ${{ github.event.inputs.working_directory }}
 
-      - name: Upload Plan Artifact
-        if: success()
+      - name: Upload Plan File
         uses: actions/upload-artifact@v4
         with:
-          name: tf-plan-file
+          name: tf-plan-artifact
           path: ${{ github.workspace }}\tfplan
+
+  # --- Stage 2: Manual Approval ---
+  manual_approval:
+    name: "Waiting for Approval"
+    needs: terraform_plan
+    runs-on: ubuntu-latest
+    environment: dev # GitHub Settings -> Environments mein 'dev' hona chahiye
+    steps:
+      - name: Approved
+        run: echo "Plan approved by user. Starting Apply..."
+
+  # --- Stage 3: Terraform Apply ---
+  terraform_apply:
+    name: "Terraform Apply"
+    needs: manual_approval
+    runs-on: windows-latest
+    env:
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.0
+          terraform_wrapper: false
+
+      - name: Download Plan File
+        uses: actions/download-artifact@v4
+        with:
+          name: tf-plan-artifact
+          path: ${{ github.workspace }}
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ${{ github.event.inputs.working_directory }}
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve "${{ github.workspace }}\tfplan"
+        working-directory: ${{ github.event.inputs.working_directory }}
