@@ -28,11 +28,6 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.5.0
-          terraform_wrapper: false
 
       - name: Terraform Init
         run: terraform init
@@ -53,7 +48,7 @@ jobs:
     name: "Waiting for Approval"
     needs: terraform_plan
     runs-on: ubuntu-latest
-    environment: dev # GitHub Settings -> Environments mein 'dev' hona chahiye
+    environment: dev 
     steps:
       - name: Approved
         run: echo "Plan approved by user. Starting Apply..."
@@ -72,12 +67,6 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.5.0
-          terraform_wrapper: false
 
       - name: Download Plan File
         uses: actions/download-artifact@v4
