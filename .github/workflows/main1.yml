@@ -16,7 +16,7 @@ jobs:
   
   terraform_plan:
     name: "Terraform Plan"
-    runs-on: windows-latest
+    runs-on: [self-hosted, Windows]
     env:
       ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
       ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
@@ -62,7 +62,7 @@ jobs:
   terraform_apply:
     name: "Terraform Apply"
     needs: manual_approval
-    runs-on: windows-latest
+    runs-on: [self-hosted, Windows]
     env:
       ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
       ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
