@@ -11,4 +11,8 @@ Rg = {
     name     = "rg3"
     location = "eastus2"
   }
+   "rg4" = {
+    name     = "rg4"
+    location = "eastus2"
+  }
 } 
