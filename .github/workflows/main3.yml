@@ -12,7 +12,7 @@ on:
         options: [Dev, SIT, UAT, Prod, DR]
         default: prod
       working_directory:
-        description: "Terraform working directory (relative to repo root)"
+        description: "Terraform working directory"
         type: string
         required: true
         default: infra
@@ -50,7 +50,7 @@ jobs:
     name: "PR checks & plan (Windows)"
     runs-on: windows-latest
     environment:
-      name: Dev  # low-priv env if needed
+      name: pord  # low-priv env if needed
     defaults:
       run:
         shell: pwsh
