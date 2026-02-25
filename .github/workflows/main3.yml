@@ -15,7 +15,7 @@ on:
         description: "Terraform working directory"
         type: string
         required: true
-        default: infra
+        default: rg
       tf_vars_file:
         description: "Optional tfvars file path (relative to working_directory)"
         type: string
